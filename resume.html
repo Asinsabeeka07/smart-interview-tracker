@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS Resume Builder</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="bg-grid"></div>
+    
+    <nav class="sidebar">
+        <div class="logo">SIT</div>
+        <a href="index.html" class="nav-item">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">Dashboard</span>
+        </a>
+        <a href="resume.html" class="nav-item active">
+            <span class="nav-icon">📄</span>
+            <span class="nav-text">ATS Resume</span>
+        </a>
+        <a href="scheduler.html" class="nav-item">
+            <span class="nav-icon">🤖</span>
+            <span class="nav-text">Smart AI</span>
+        </a>
+        <a href="analytics.html" class="nav-item">
+            <span class="nav-icon">📈</span>
+            <span class="nav-text">Analytics</span>
+        </a>
+    </nav>
+
+    <main class="main-content">
+        <header class="header">
+            <h1>ATS Resume Optimizer</h1>
+            <p style="color: var(--text-secondary);">Beat the Applicant Tracking System with AI</p>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="card" style="grid-column: span 2;">
+                <div class="card-header">
+                    <div class="card-icon">🎯</div>
+                    <span>Resume Analysis</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <div>
+                        <div class="input-group">
+                            <label>Target Job Title</label>
+                            <input type="text" id="jobTitle" placeholder="e.g., Senior Frontend Developer">
+                        </div>
+                        <div class="input-group">
+                            <label>Your Skills (comma separated)</label>
+                            <textarea id="skills" rows="4" placeholder="React, Node.js, TypeScript, AWS..."></textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Years of Experience</label>
+                            <input type="number" id="expYears" value="3">
+                        </div>
+                        <div class="input-group">
+                            <label>Job Description (paste here for matching)</label>
+                            <textarea id="jobDesc" rows="4" placeholder="Paste the job description here to check keyword match..."></textarea>
+                        </div>
+                        <button class="btn" onclick="analyzeResume()">Analyze ATS Score</button>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div class="score-circle" id="scoreCircle">
+                            <div class="score-text" id="atsScore">0</div>
+                        </div>
+                        <div style="margin-top: 20px; text-align: center;">
+                            <h3 style="color: var(--accent-red); margin-bottom: 10px;">ATS Compatibility</h3>
+                            <p style="color: var(--text-secondary); font-size: 14px;" id="scoreText">
+                                Enter your details and click analyze
+                            </p>
+                        </div>
+                        <div id="suggestions" style="margin-top: 20px; width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">💡</div>
+                    <span>Optimization Tips</span>
+                </div>
+                <div class="algo-steps" id="tips">
+                    <div class="algo-step">
+                        <div class="step-number">1</div>
+                        <div>Use standard job titles</div>
+                    </div>
+                    <div class="algo-step">
+                        <div class="step-number">2</div>
+                        <div>Include keywords from job desc</div>
+                    </div>
+                    <div class="algo-step">
+                        <div class="step-number">3</div>
+                        <div>Avoid tables and graphics</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="toast" id="toast">
+        <span class="toast-icon">🔔</span>
+        <span id="toastMessage"></span>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script>
+        async function analyzeResume() {
+            const data = {
+                jobTitle: document.getElementById('jobTitle').value,
+                skills: document.getElementById('skills').value,
+                experience: parseInt(document.getElementById('expYears').value),
+                jobDescription: document.getElementById('jobDesc').value
+            };
+
+            showToast('Analyzing resume...');
+            
+            const res = await fetch('/api/analyze-resume', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await res.json();
+            
+            // Animate score
+            const scoreEl = document.getElementById('atsScore');
+            const circle = document.getElementById('scoreCircle');
+            let current = 0;
+            const target = result.score;
+            const interval = setInterval(() => {
+                current += 2;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(interval);
+                }
+                scoreEl.textContent = current;
+                circle.style.background = `conic-gradient(var(--accent-red) 0% ${current}%, #1a1a1a ${current}% 100%)`;
+            }, 20);
+
+            document.getElementById('scoreText').textContent = 
+                result.score > 80 ? 'Excellent! Your resume is ATS-friendly.' :
+                result.score > 60 ? 'Good, but can be improved.' : 'Needs optimization. Follow suggestions below.';
+
+            // Show suggestions
+            const sugDiv = document.getElementById('suggestions');
+            sugDiv.innerHTML = result.suggestions.map(s => `
+                <div style="background: rgba(255,0,51,0.1); padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid var(--accent-red); font-size: 14px;">
+                    ${s}
+                </div>
+            `).join('');
+
+            showToast('Analysis complete!');
+        }
+    </script>
+</body>
+</html>
